@@ -4,71 +4,7 @@
 
 package database
 
-import (
-	"database/sql"
-	"database/sql/driver"
-	"fmt"
-)
-
-type LogsType string
-
-const (
-	LogsTypeINFO    LogsType = "INFO"
-	LogsTypeWARNING LogsType = "WARNING"
-	LogsTypeERROR   LogsType = "ERROR"
-	LogsTypePANIC   LogsType = "PANIC"
-	LogsTypeFATAL   LogsType = "FATAL"
-)
-
-func (e *LogsType) Scan(src interface{}) error {
-	switch s := src.(type) {
-	case []byte:
-		*e = LogsType(s)
-	case string:
-		*e = LogsType(s)
-	default:
-		return fmt.Errorf("unsupported scan type for LogsType: %T", src)
-	}
-	return nil
-}
-
-type NullLogsType struct {
-	LogsType LogsType
-	Valid    bool // Valid is true if LogsType is not NULL
-}
-
-// Scan implements the Scanner interface.
-func (ns *NullLogsType) Scan(value interface{}) error {
-	if value == nil {
-		ns.LogsType, ns.Valid = "", false
-		return nil
-	}
-	ns.Valid = true
-	return ns.LogsType.Scan(value)
-}
-
-// Value implements the driver Valuer interface.
-func (ns NullLogsType) Value() (driver.Value, error) {
-	if !ns.Valid {
-		return nil, nil
-	}
-	return string(ns.LogsType), nil
-}
-
 type Card struct {
-	Uid      []byte
+	Uid      string
 	UserName string
-}
-
-type Log struct {
-	ID      int64
-	Type    LogsType
-	Message sql.NullString
-	Scanner string
-	Card    []byte
-}
-
-type Scanner struct {
-	Uuid       string
-	PrivateKey []byte
 }

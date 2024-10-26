@@ -1,18 +1,24 @@
 package main
 
 import (
+	"context"
 	"crypto/rsa"
 	"crypto/x509"
+	"database/sql"
 	"encoding/hex"
 	"encoding/json"
 	"encoding/pem"
 	"fmt"
 	"io"
+	"main/sqlc/database"
 	"net/http"
 	"os"
+	"path/filepath"
 
 	_ "github.com/go-sql-driver/mysql"
 )
+
+const deviceUUID string = "0192c9f5-02fc-7eb1-9e72-fdf12acf481e"
 
 // https://dev.to/elioenaiferrari/asymmetric-cryptography-with-golang-2ffd
 func main() {
@@ -28,18 +34,6 @@ type authorizeRequest struct {
 }
 
 func checkUser(w http.ResponseWriter, r *http.Request) {
-	/*
-		// create mysql connection
-		ctx := context.Background()
-		connStr := "root:pass@tcp(127.0.0.1:33060)/kiber"
-		db, err := sql.Open("mysql", connStr)
-		if errResponse(w, http.StatusBadRequest, err) {
-			return
-		}
-		defer db.Close()
-		queries := database.New(db)
-	*/
-
 	// read body
 	body, err := io.ReadAll(r.Body)
 	if errResponse(w, http.StatusBadRequest, err) {
@@ -54,14 +48,12 @@ func checkUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	/*
-		// get key from db
-		privateKeyFile, err := queries.GetScanner(ctx, requestContent.UUID)
-		if errResponse(w, http.StatusBadRequest, err) {
-			return
-		}
-	*/
-	privateKeyFile, err := os.ReadFile("./cmd/create_keys/private.pem")
+	if requestContent.UUID != deviceUUID {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+
+	privateKeyFile, err := os.ReadFile(filepath.Join(".", "cmd", "create_keys", "private.pem"))
 	if errResponse(w, http.StatusInternalServerError, err) {
 		return
 	}
@@ -82,26 +74,27 @@ func checkUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	/*
-		name, err := queries.AuthorizedCard(ctx, cardUID)
-		if errResponse(w, http.StatusBadRequest, err) {
-			return
-		}
+	// create mysql connection
+	ctx := context.Background()
+	connStr := "root:pass@tcp(127.0.0.1:3306)/kiber"
+	db, err := sql.Open("mysql", connStr)
+	if errResponse(w, http.StatusBadRequest, err) {
+		fmt.Println("FUCK ME")
+		return
+	}
+	defer db.Close()
+	queries := database.New(db)
 
-		log := database.InsertLogParams{
-			Type: database.LogsTypeINFO,
-			Message: sql.NullString{
-				String: "Authorized",
-				Valid:  true,
-			},
-			Scanner: requestContent.UUID,
-			Card:    cardUID,
-		}
-		err = queries.InsertLog(ctx, log)
-		if errResponse(w, http.StatusBadRequest, err) {
-			return
-		}
-	*/
+	// check authorization
+	name, err := queries.AuthorizedCard(ctx, string(cardUID))
+	if errResponse(w, http.StatusBadRequest, err) {
+		return
+	}
+
+	if name != "" {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
 
 	// fmt.Printf("%s entered\n", name)
 	// check in db if card is authorized

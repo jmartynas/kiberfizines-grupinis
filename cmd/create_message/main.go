@@ -9,6 +9,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"github.com/google/uuid"
 )
@@ -29,7 +30,7 @@ func main() {
 		return
 	}
 
-	publicKeyPEM, err := os.ReadFile("../create_keys/public.pem")
+	publicKeyPEM, err := os.ReadFile(filepath.Join("..", "create_keys", "public.pem"))
 	if err != nil {
 		panic(err)
 	}
