@@ -1,0 +1,26 @@
+DROP DATABASE IF EXISTS kiber;
+CREATE DATABASE kiber;
+USE kiber;
+
+CREATE TABLE scanner (
+  uuid VARCHAR(36) NOT NULL,
+  private_key BINARY(255) NOT NULL,
+  PRIMARY KEY (uuid)
+);
+
+CREATE TABLE card (
+  uid BINARY(4) NOT NULL,
+  user_name VARCHAR(256) NOT NULL,
+  PRIMARY KEY (uid)
+);
+
+CREATE TABLE logs (
+  id BIGINT NOT NULL AUTO_INCREMENT,
+  type ENUM('INFO', 'WARNING', 'ERROR', 'PANIC', 'FATAL') NOT NULL,
+  message VARCHAR(256),
+  scanner VARCHAR(36) NOT NULL,
+  card BINARY(4) NOT NULL,
+  PRIMARY KEY (id),
+  FOREIGN KEY (scanner) REFERENCES scanner(uuid),
+  FOREIGN KEY (card) REFERENCES card(uid)
+);
