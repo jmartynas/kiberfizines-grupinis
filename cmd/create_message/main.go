@@ -6,6 +6,7 @@ import (
 	"crypto/x509"
 	"encoding/json"
 	"encoding/pem"
+	"flag"
 	"fmt"
 	"os"
 
@@ -18,6 +19,16 @@ type request struct {
 }
 
 func main() {
+	tmp := ""
+	message := &tmp
+	flag.StringVar(message, "message", "", "./<executable name> -message \"<content>\"")
+	flag.Parse()
+
+	if *message == "" {
+		flag.Usage()
+		return
+	}
+
 	publicKeyPEM, err := os.ReadFile("../create_keys/public.pem")
 	if err != nil {
 		panic(err)
@@ -28,7 +39,7 @@ func main() {
 		panic(err)
 	}
 
-	plaintext := []byte("message")
+	plaintext := []byte(*message)
 	ciphertext, err := rsa.EncryptPKCS1v15(rand.Reader, publicKey.(*rsa.PublicKey), plaintext)
 	if err != nil {
 		panic(err)
@@ -46,5 +57,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+
+	fmt.Println("message input:", *message)
 	fmt.Println(string(rq))
 }

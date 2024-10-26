@@ -81,7 +81,6 @@ func checkUser(w http.ResponseWriter, r *http.Request) {
 	if errResponse(w, http.StatusBadRequest, err) {
 		return
 	}
-	fmt.Println(string(cardUID))
 
 	/*
 		name, err := queries.AuthorizedCard(ctx, cardUID)
@@ -107,7 +106,7 @@ func checkUser(w http.ResponseWriter, r *http.Request) {
 	// fmt.Printf("%s entered\n", name)
 	// check in db if card is authorized
 	w.WriteHeader(http.StatusOK)
-	_, _ = w.Write([]byte("true"))
+	_, _ = w.Write(cardUID)
 }
 
 func errResponse(w http.ResponseWriter, status int, err error) bool {
