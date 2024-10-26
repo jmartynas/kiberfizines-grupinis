@@ -51,7 +51,6 @@ func checkUser(w http.ResponseWriter, r *http.Request) {
 	requestContent := &authorizeRequest{}
 	err = json.Unmarshal(body, requestContent)
 	if errResponse(w, http.StatusBadRequest, err) {
-		fmt.Println("FUCK ME")
 		return
 	}
 
@@ -63,13 +62,13 @@ func checkUser(w http.ResponseWriter, r *http.Request) {
 		}
 	*/
 	privateKeyFile, err := os.ReadFile("./cmd/create_keys/private.pem")
-	if errResponse(w, http.StatusBadRequest, err) {
+	if errResponse(w, http.StatusInternalServerError, err) {
 		return
 	}
 
 	privateKeyBlock, _ := pem.Decode(privateKeyFile)
 	privateKey, err := x509.ParsePKCS1PrivateKey(privateKeyBlock.Bytes)
-	if errResponse(w, http.StatusBadRequest, err) {
+	if errResponse(w, http.StatusInternalServerError, err) {
 		return
 	}
 
@@ -114,7 +113,7 @@ func checkUser(w http.ResponseWriter, r *http.Request) {
 func errResponse(w http.ResponseWriter, status int, err error) bool {
 	if err != nil {
 		fmt.Println(err)
-		w.WriteHeader(http.StatusBadRequest)
+		w.WriteHeader(status)
 		_, _ = w.Write([]byte(err.Error()))
 		return true
 	}
