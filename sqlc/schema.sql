@@ -11,4 +11,4 @@ CREATE TABLE card (
 INSERT INTO card
 (uid, user_name)
 VALUES
-('48 97 25 68', 'vardenis pavardenis')
+('48972568', 'vardenis pavardenis');

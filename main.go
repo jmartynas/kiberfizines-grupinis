@@ -14,6 +14,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 
 	_ "github.com/go-sql-driver/mysql"
 )
@@ -74,36 +75,41 @@ func checkUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	cardUIDstr := strings.ReplaceAll(string(cardUID), " ", "")
+
 	// create mysql connection
-	ctx := context.Background()
-	connStr := "root:pass@tcp(127.0.0.1:3306)/kiber"
+	connStr := "root:pass@tcp(localhost:3306)/kiber"
 	db, err := sql.Open("mysql", connStr)
-	if errResponse(w, http.StatusBadRequest, err) {
-		fmt.Println("FUCK ME")
+	if errResponse(w, http.StatusInternalServerError, err) {
 		return
 	}
-	defer db.Close()
 	queries := database.New(db)
 
+	if err := db.Ping(); err != nil {
+		fmt.Println(err)
+		return
+	}
+
 	// check authorization
-	name, err := queries.AuthorizedCard(ctx, string(cardUID))
+	ctx := context.Background()
+	name, err := queries.AuthorizedCard(ctx, cardUIDstr)
 	if errResponse(w, http.StatusBadRequest, err) {
 		return
 	}
 
-	if name != "" {
+	if name == "" {
 		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
 
-	// fmt.Printf("%s entered\n", name)
-	// check in db if card is authorized
+	fmt.Printf("%s entered\n", name)
 	w.WriteHeader(http.StatusOK)
-	_, _ = w.Write(cardUID)
+	_, _ = w.Write([]byte(name))
+	db.Close()
 }
 
 func errResponse(w http.ResponseWriter, status int, err error) bool {
-	if err != nil {
+	if err != nil && err != sql.ErrNoRows {
 		fmt.Println(err)
 		w.WriteHeader(status)
 		_, _ = w.Write([]byte(err.Error()))

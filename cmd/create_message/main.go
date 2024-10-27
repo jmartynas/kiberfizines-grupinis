@@ -10,8 +10,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-
-	"github.com/google/uuid"
+	"strings"
 )
 
 type request struct {
@@ -20,11 +19,14 @@ type request struct {
 }
 
 func main() {
-	tmp := ""
-	message := &tmp
-	flag.StringVar(message, "message", "", "./<executable name> -message \"<content>\"")
+	uuid := "0192c9f5-02fc-7eb1-9e72-fdf12acf481e"
+	uid := ""
+	message := &uid
+	flag.StringVar(message, "cardUID", "", "EXAMPLE: ./<executable name> -message \"<content>\"")
 	flag.Parse()
-
+	uid = *message
+	uid = strings.ReplaceAll(uid, " ", "")
+	message = &uid
 	if *message == "" {
 		flag.Usage()
 		return
@@ -46,12 +48,8 @@ func main() {
 		panic(err)
 	}
 
-	uuid, err := uuid.NewV7()
-	if err != nil {
-		panic(err)
-	}
 	request := request{
-		UUID:    uuid.String(),
+		UUID:    uuid,
 		Content: fmt.Sprintf("%x", ciphertext),
 	}
 	rq, err := json.Marshal(request)
@@ -59,6 +57,6 @@ func main() {
 		panic(err)
 	}
 
-	fmt.Println("message input:", *message)
+	fmt.Println("card UID input:", *message)
 	fmt.Println(string(rq))
 }
