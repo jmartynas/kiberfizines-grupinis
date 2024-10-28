@@ -102,6 +102,7 @@ func checkUser(w http.ResponseWriter, r *http.Request) {
 	cardUID := make([]byte, len(encodedMessage))
 	dec := cipher.NewCBCDecrypter(block, iv)
 	dec.CryptBlocks(cardUID, encodedMessage)
+	fmt.Println("cardUID", cardUID)
 	cardUID = Unpad(cardUID, aes.BlockSize)
 	cardUIDstr := strings.ReplaceAll(string(cardUID), " ", "")
 
