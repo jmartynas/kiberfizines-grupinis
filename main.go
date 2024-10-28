@@ -119,6 +119,7 @@ func checkUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	fmt.Println("card UID string", cardUIDstr)
 	// check authorization
 	ctx := context.Background()
 	name, err := queries.AuthorizedCard(ctx, cardUIDstr)
