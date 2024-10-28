@@ -14,14 +14,25 @@ Launching binaries should be enough.
 
 Without response header
 
+curl localhost:8080/ -X POST -d '{"UUID":"0192c9f5-02fc-7eb1-9e72-fdf12acf481e","content":"9f704f5456828ad6f04756ae7a85c5ab"}'
+
 ```
-curl localhost:8080/ -X POST -d '{"UUID":"0192c9f5-02fc-7eb1-9e72-fdf12acf481e","content":"37541266f93eadb996a826dd57cbcc540acf44fe19e4a2d53f0a233bd30c4a67723f7eb4402662be0c7312da2f41dea4f4e4c4a67dad9c08005e2db8f8c3045232cef57cae172e45b52ba9a5235bec53fa9212c7ceffac5fc96f0abb9e0ccbe5a7741c8a29829cdfb7c98a0bbe2a623b78f8b3abe875b1956745684f80531515b9e092115a05a06fb430250fe486bef2f56e77745aeb22cd9abd9440b764cd1fc5e9866da9109fdaaca64f0d5ea4150c16f2024b70c0bf919441cd2ba29bd9880ce5508ff5ccce6af1397c2b595d6bf076ff91f97154666e840a01cab613f23e7a73f049e721a7c9e4168ac9845b88bb0f77733b74947112d90c6f0c72e28280"}'
+$ curl localhost:8080/ -X POST -d '{"UUID":"0192c9f5-02fc-7eb1-9e72-fdf12acf481e","content":"9f704f5456828ad6f04756ae7a85c5ab"}'
+vardenis pavardenis entered
+vardenis pavardenis
 ```
 
 With response header
 
 ```
-curl localhost:8080/ -i -d '{"UUID":"0192c9f5-02fc-7eb1-9e72-fdf12acf481e","content":"37541266f93eadb996a826dd57cbcc540acf44fe19e4a2d53f0a233bd30c4a67723f7eb4402662be0c7312da2f41dea4f4e4c4a67dad9c08005e2db8f8c3045232cef57cae172e45b52ba9a5235bec53fa9212c7ceffac5fc96f0abb9e0ccbe5a7741c8a29829cdfb7c98a0bbe2a623b78f8b3abe875b1956745684f80531515b9e092115a05a06fb430250fe486bef2f56e77745aeb22cd9abd9440b764cd1fc5e9866da9109fdaaca64f0d5ea4150c16f2024b70c0bf919441cd2ba29bd9880ce5508ff5ccce6af1397c2b595d6bf076ff91f97154666e840a01cab613f23e7a73f049e721a7c9e4168ac9845b88bb0f77733b74947112d90c6f0c72e28280"}'
+$ curl localhost:8080/ -i -d '{"UUID":"0192c9f5-02fc-7eb1-9e72-fdf12acf481e","content":"9f704f5456828ad6f04756ae7a85c5ab"}'
+vardenis pavardenis entered
+HTTP/1.1 200 OK
+Date: Mon, 28 Oct 2024 17:35:10 GMT
+Content-Length: 19
+Content-Type: text/plain; charset=utf-8
+
+vardenis pavardenis
 ```
 
 ### CARD UID FORMAT BEFORE ENCRYPTING
@@ -29,8 +40,12 @@ curl localhost:8080/ -i -d '{"UUID":"0192c9f5-02fc-7eb1-9e72-fdf12acf481e","cont
 When hashing a string it should be of a string type card UID.
 If card UID is [0f 48 5e 69] then the string should be "0f 48 5e 69".
 Any amount of spaces are valid.
-Eg. "0f485e69" or "   0f         48   5e69   " is valid.
+Eg. "0f485e69" or " 0f 48 5e69 " is valid.
 
-### DEVICE UUID 
+### HARD CODED VALUES
 
-Device UUID has to be `0192c9f5-02fc-7eb1-9e72-fdf12acf481e`
+`Device UUID`: `0192c9f5-02fc-7eb1-9e72-fdf12acf481e`
+
+`key`: `{0x2b,0x7e,0x15,0x16,0x28,0xae,0xd2,0xa6,0xab,0xf7,0x97,0x99,0x89,0xcf,0xab,0x12}`
+
+`iv`: `{0x2b,0x7e,0x15,0x16,0x28,0xae,0xd2,0xa6,0xab,0xf7,0x97,0x99,0x89,0xcf,0xab,0x12}`

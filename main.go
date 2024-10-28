@@ -2,24 +2,59 @@ package main
 
 import (
 	"context"
-	"crypto/rsa"
-	"crypto/x509"
+	"crypto/aes"
+	"crypto/cipher"
 	"database/sql"
 	"encoding/hex"
 	"encoding/json"
-	"encoding/pem"
 	"fmt"
 	"io"
 	"main/sqlc/database"
 	"net/http"
-	"os"
-	"path/filepath"
 	"strings"
 
 	_ "github.com/go-sql-driver/mysql"
 )
 
 const deviceUUID string = "0192c9f5-02fc-7eb1-9e72-fdf12acf481e"
+
+var key = []byte{
+	0x2b,
+	0x7e,
+	0x15,
+	0x16,
+	0x28,
+	0xae,
+	0xd2,
+	0xa6,
+	0xab,
+	0xf7,
+	0x97,
+	0x99,
+	0x89,
+	0xcf,
+	0xab,
+	0x12,
+}
+
+var iv = []byte{
+	0x2b,
+	0x7e,
+	0x15,
+	0x16,
+	0x28,
+	0xae,
+	0xd2,
+	0xa6,
+	0xab,
+	0xf7,
+	0x97,
+	0x99,
+	0x89,
+	0xcf,
+	0xab,
+	0x12,
+}
 
 // https://dev.to/elioenaiferrari/asymmetric-cryptography-with-golang-2ffd
 func main() {
@@ -54,13 +89,7 @@ func checkUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	privateKeyFile, err := os.ReadFile(filepath.Join(".", "cmd", "create_keys", "private.pem"))
-	if errResponse(w, http.StatusInternalServerError, err) {
-		return
-	}
-
-	privateKeyBlock, _ := pem.Decode(privateKeyFile)
-	privateKey, err := x509.ParsePKCS1PrivateKey(privateKeyBlock.Bytes)
+	block, err := aes.NewCipher(key)
 	if errResponse(w, http.StatusInternalServerError, err) {
 		return
 	}
@@ -70,15 +99,14 @@ func checkUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	cardUID, err := rsa.DecryptPKCS1v15(nil, privateKey, encodedMessage)
-	if errResponse(w, http.StatusBadRequest, err) {
-		return
-	}
-
+	cardUID := make([]byte, len(encodedMessage))
+	dec := cipher.NewCBCDecrypter(block, iv)
+	dec.CryptBlocks(cardUID, encodedMessage)
+	cardUID = Unpad(cardUID, aes.BlockSize)
 	cardUIDstr := strings.ReplaceAll(string(cardUID), " ", "")
 
 	// create mysql connection
-	connStr := "root:pass@tcp(localhost:3306)/kiber"
+	connStr := "root:pass@tcp(127.0.0.1:3306)/kiber"
 	db, err := sql.Open("mysql", connStr)
 	if errResponse(w, http.StatusInternalServerError, err) {
 		return
@@ -117,3 +145,27 @@ func errResponse(w http.ResponseWriter, status int, err error) bool {
 	}
 	return false
 }
+
+func Unpad(data []byte, blockSize int) []byte {
+	n := int(data[len(data)-1])
+	return data[:len(data)-n]
+}
+
+/*
+
+	ciphertext, err := hex.DecodeString((*test).Content)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	plaintext := make([]byte, len(ciphertext))
+	dec := cipher.NewCBCDecrypter(block, iv)
+	dec.CryptBlocks(plaintext, ciphertext)
+
+	plaintext = Unpad(plaintext, aes.BlockSize)
+
+	fmt.Println("Decrypted UID:", string(plaintext))
+}
+
+*/

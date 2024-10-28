@@ -1,62 +1,94 @@
 package main
 
 import (
-	"crypto/rand"
-	"crypto/rsa"
-	"crypto/x509"
+	"bytes"
+	"crypto/aes"
+	"crypto/cipher"
 	"encoding/json"
-	"encoding/pem"
 	"flag"
 	"fmt"
-	"os"
-	"path/filepath"
 	"strings"
 )
 
-type request struct {
+type test struct {
 	UUID    string `json:"UUID"`
 	Content string `json:"content"`
 }
 
 func main() {
-	uuid := "0192c9f5-02fc-7eb1-9e72-fdf12acf481e"
-	uid := ""
-	message := &uid
-	flag.StringVar(message, "cardUID", "", "EXAMPLE: ./<executable name> -message \"<content>\"")
+	key := []byte{
+		0x2b,
+		0x7e,
+		0x15,
+		0x16,
+		0x28,
+		0xae,
+		0xd2,
+		0xa6,
+		0xab,
+		0xf7,
+		0x97,
+		0x99,
+		0x89,
+		0xcf,
+		0xab,
+		0x12,
+	}
+	iv := []byte{
+		0x2b,
+		0x7e,
+		0x15,
+		0x16,
+		0x28,
+		0xae,
+		0xd2,
+		0xa6,
+		0xab,
+		0xf7,
+		0x97,
+		0x99,
+		0x89,
+		0xcf,
+		0xab,
+		0x12,
+	}
+
+	text := flag.String("cardUID", "", "card UID")
 	flag.Parse()
-	uid = *message
-	uid = strings.ReplaceAll(uid, " ", "")
-	message = &uid
-	if *message == "" {
+
+	*text = strings.ReplaceAll(*text, " ", "")
+
+	if *text == "" {
 		flag.Usage()
 		return
 	}
 
-	publicKeyPEM, err := os.ReadFile(filepath.Join("..", "create_keys", "public.pem"))
+	block, err := aes.NewCipher(key)
 	if err != nil {
-		panic(err)
-	}
-	publicKeyBlock, _ := pem.Decode(publicKeyPEM)
-	publicKey, err := x509.ParsePKIXPublicKey(publicKeyBlock.Bytes)
-	if err != nil {
-		panic(err)
+		fmt.Println(err)
+		return
 	}
 
-	plaintext := []byte(*message)
-	ciphertext, err := rsa.EncryptPKCS1v15(rand.Reader, publicKey.(*rsa.PublicKey), plaintext)
-	if err != nil {
-		panic(err)
-	}
+	plain := Pad([]byte(*text), aes.BlockSize)
+	ciphertext := make([]byte, len(plain))
+	mode := cipher.NewCBCEncrypter(block, iv)
+	mode.CryptBlocks(ciphertext, plain)
 
-	request := request{
-		UUID:    uuid,
+	test := test{
+		UUID:    "0192c9f5-02fc-7eb1-9e72-fdf12acf481e",
 		Content: fmt.Sprintf("%x", ciphertext),
 	}
-	rq, err := json.Marshal(request)
+	body, err := json.Marshal(test)
 	if err != nil {
-		panic(err)
+		fmt.Println(err)
+		return
 	}
 
-	fmt.Println("card UID input:", *message)
-	fmt.Println(string(rq))
+	fmt.Println(string(body))
+}
+
+func Pad(data []byte, blockSize int) []byte {
+	n := blockSize - len(data)%blockSize
+	padding := bytes.Repeat([]byte{byte(n)}, n)
+	return append(data, padding...)
 }
