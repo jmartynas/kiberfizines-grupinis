@@ -37,25 +37,6 @@ var key = []byte{
 	0x12,
 }
 
-var iv = []byte{
-	0x2b,
-	0x7e,
-	0x15,
-	0x16,
-	0x28,
-	0xae,
-	0xd2,
-	0xa6,
-	0xab,
-	0xf7,
-	0x97,
-	0x99,
-	0x89,
-	0xcf,
-	0xab,
-	0x12,
-}
-
 // https://dev.to/elioenaiferrari/asymmetric-cryptography-with-golang-2ffd
 func main() {
 	http.HandleFunc("/", checkUser)
@@ -66,6 +47,7 @@ func main() {
 
 type authorizeRequest struct {
 	UUID    string `json:"UUID"`
+	IV      string `json:"iv"`
 	Content string `json:"content"`
 }
 
@@ -91,6 +73,11 @@ func checkUser(w http.ResponseWriter, r *http.Request) {
 
 	block, err := aes.NewCipher(key)
 	if errResponse(w, http.StatusInternalServerError, err) {
+		return
+	}
+
+	iv, err := hex.DecodeString(requestContent.IV)
+	if errResponse(w, http.StatusBadRequest, err) {
 		return
 	}
 
