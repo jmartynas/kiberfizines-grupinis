@@ -94,7 +94,7 @@ func checkUser(w http.ResponseWriter, r *http.Request) {
 
 	fmt.Printf("Received UID bytes: %v\n", cardUID)
 
-	cardUID = Unpad(cardUID, aes.BlockSize)
+	cardUID = Unpad(cardUID)
 	cardUIDstr := strings.ToUpper(hex.EncodeToString(cardUID))
 
 	// create mysql connection
@@ -109,7 +109,7 @@ func checkUser(w http.ResponseWriter, r *http.Request) {
 	queries := database.New(db)
 
 	if err := db.Ping(); err != nil {
-		fmt.Println("Database connection failed:", err)
+		errResponse(w, http.StatusServiceUnavailable, fmt.Errorf("database unavailable"))
 		return
 	}
 
@@ -146,7 +146,7 @@ func errResponse(w http.ResponseWriter, status int, err error) bool {
 	return false
 }
 
-func Unpad(data []byte, blockSize int) []byte {
+func Unpad(data []byte) []byte {
 	n := int(data[len(data)-1])
 	return data[:len(data)-n]
 }
