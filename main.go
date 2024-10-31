@@ -42,7 +42,7 @@ func main() {
 	fmt.Println("Server started on :8080")
 	http.HandleFunc("/", checkUser)
 	if err := http.ListenAndServe(":8080", nil); err != http.ErrServerClosed {
-		fmt.Println("Server error:", err) // Modified error message
+		fmt.Println("Server error:", err)
 	}
 }
 
