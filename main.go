@@ -89,9 +89,13 @@ func checkUser(w http.ResponseWriter, r *http.Request) {
 	cardUID := make([]byte, len(encodedMessage))
 	dec := cipher.NewCBCDecrypter(block, iv)
 	dec.CryptBlocks(cardUID, encodedMessage)
-	fmt.Println("cardUID", cardUID)
+
+	fmt.Printf("Received UID bytes: %v\n", cardUID)
+
 	cardUID = Unpad(cardUID, aes.BlockSize)
-	cardUIDstr := strings.ReplaceAll(string(cardUID), " ", "")
+	cardUIDstr := strings.ToUpper(hex.EncodeToString(cardUID))
+
+	fmt.Printf("Formatted UID hex string: %s\n", cardUIDstr)
 
 	// create mysql connection
 	connStr := "root:pass@tcp(127.0.0.1:3306)/kiber"
@@ -106,7 +110,6 @@ func checkUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fmt.Println("card UID string", cardUIDstr)
 	// check authorization
 	ctx := context.Background()
 	name, err := queries.AuthorizedCard(ctx, cardUIDstr)
