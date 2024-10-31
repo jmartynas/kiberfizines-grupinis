@@ -39,9 +39,10 @@ var key = []byte{
 
 // https://dev.to/elioenaiferrari/asymmetric-cryptography-with-golang-2ffd
 func main() {
+	fmt.Println("Server started on :8080")
 	http.HandleFunc("/", checkUser)
 	if err := http.ListenAndServe(":8080", nil); err != http.ErrServerClosed {
-		fmt.Println(err)
+		fmt.Println("Server error:", err) // Modified error message
 	}
 }
 
@@ -67,6 +68,7 @@ func checkUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if requestContent.UUID != deviceUUID {
+		fmt.Println("Unauthorized device attempt")
 		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
@@ -95,37 +97,43 @@ func checkUser(w http.ResponseWriter, r *http.Request) {
 	cardUID = Unpad(cardUID, aes.BlockSize)
 	cardUIDstr := strings.ToUpper(hex.EncodeToString(cardUID))
 
-	fmt.Printf("Formatted UID hex string: %s\n", cardUIDstr)
-
 	// create mysql connection
 	connStr := "root:pass@tcp(127.0.0.1:3306)/kiber"
 	db, err := sql.Open("mysql", connStr)
 	if errResponse(w, http.StatusInternalServerError, err) {
 		return
 	}
+
+	defer db.Close()
+
 	queries := database.New(db)
 
 	if err := db.Ping(); err != nil {
-		fmt.Println(err)
+		fmt.Println("Database connection failed:", err)
 		return
 	}
 
 	// check authorization
 	ctx := context.Background()
 	name, err := queries.AuthorizedCard(ctx, cardUIDstr)
+	if err == sql.ErrNoRows {
+		fmt.Printf("Access denied for card: %s\n", cardUIDstr)
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
 	if errResponse(w, http.StatusBadRequest, err) {
 		return
 	}
 
 	if name == "" {
+		fmt.Printf("Access denied: no name found for card %s\n", cardUIDstr)
 		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
 
-	fmt.Printf("%s entered\n", name)
+	fmt.Printf("Access granted: %s entered (%s)\n", name, cardUIDstr)
 	w.WriteHeader(http.StatusOK)
 	_, _ = w.Write([]byte(name))
-	db.Close()
 }
 
 func errResponse(w http.ResponseWriter, status int, err error) bool {
