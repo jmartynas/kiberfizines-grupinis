@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"crypto/aes"
 	"crypto/cipher"
+	"encoding/hex"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -12,6 +13,7 @@ import (
 
 type test struct {
 	UUID    string `json:"UUID"`
+	IV      string `json:"iv"`
 	Content string `json:"content"`
 }
 
@@ -76,6 +78,7 @@ func main() {
 
 	test := test{
 		UUID:    "0192c9f5-02fc-7eb1-9e72-fdf12acf481e",
+		IV:      hex.EncodeToString(iv),
 		Content: fmt.Sprintf("%x", ciphertext),
 	}
 	body, err := json.Marshal(test)

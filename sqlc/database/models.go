@@ -4,7 +4,18 @@
 
 package database
 
+import (
+	"time"
+)
+
 type Card struct {
 	Uid      string
 	UserName string
+}
+
+type Log struct {
+	ID        int32
+	Uid       string
+	Permitted bool
+	Time      time.Time
 }

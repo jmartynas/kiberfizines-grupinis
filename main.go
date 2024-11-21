@@ -8,10 +8,12 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"html/template"
 	"io"
 	"main/sqlc/database"
 	"net/http"
 	"strings"
+	"time"
 
 	_ "github.com/go-sql-driver/mysql"
 )
@@ -41,6 +43,7 @@ var key = []byte{
 func main() {
 	fmt.Println("Server started on :8080")
 	http.HandleFunc("/", checkUser)
+	http.HandleFunc("/logs", logs)
 	if err := http.ListenAndServe(":8080", nil); err != http.ErrServerClosed {
 		fmt.Println("Server error:", err)
 	}
@@ -122,11 +125,34 @@ func checkUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if errResponse(w, http.StatusBadRequest, err) {
+		log := database.InsertLogParams{
+			Uid:       cardUIDstr,
+			Permitted: false,
+			Time:      time.Now().Truncate(time.Second).UTC(),
+		}
+		_ = queries.InsertLog(ctx, log)
+		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
 
 	if name == "" {
 		fmt.Printf("Access denied: no name found for card %s\n", cardUIDstr)
+		log := database.InsertLogParams{
+			Uid:       cardUIDstr,
+			Permitted: false,
+			Time:      time.Now().Truncate(time.Second).UTC(),
+		}
+		_ = queries.InsertLog(ctx, log)
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+
+	log := database.InsertLogParams{
+		Uid:       cardUIDstr,
+		Permitted: true,
+		Time:      time.Now().Truncate(time.Second).UTC(),
+	}
+	if err := queries.InsertLog(ctx, log); err != nil {
 		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
@@ -151,21 +177,54 @@ func Unpad(data []byte) []byte {
 	return data[:len(data)-n]
 }
 
-/*
+func logs(w http.ResponseWriter, r *http.Request) {
+	connStr := "root:pass@tcp(127.0.0.1:3306)/kiber?parseTime=true"
+	db, err := sql.Open("mysql", connStr)
+	if errResponse(w, http.StatusInternalServerError, err) {
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Printf("failed to create database connection: %v\n", err)
+		return
+	}
+	queries := database.New(db)
 
-	ciphertext, err := hex.DecodeString((*test).Content)
-	if err != nil {
-		fmt.Println(err)
+	if err := db.Ping(); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Printf("failed to database: %v\n", err)
 		return
 	}
 
-	plaintext := make([]byte, len(ciphertext))
-	dec := cipher.NewCBCDecrypter(block, iv)
-	dec.CryptBlocks(plaintext, ciphertext)
+	// check authorization
+	ctx := context.Background()
+	logsRows, err := queries.SelectLogs(ctx)
+	if errResponse(w, http.StatusBadRequest, err) {
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Printf("failed to get logs from database: %v\n", err)
+		return
+	}
 
-	plaintext = Unpad(plaintext, aes.BlockSize)
+	type tmp struct {
+		ID        int32
+		Uid       string
+		Permitted bool
+		Time      time.Time
+		UserName  string
+	}
 
-	fmt.Println("Decrypted UID:", string(plaintext))
+	var logs []tmp
+	for _, v := range logsRows {
+		log := tmp{
+			ID:        v.ID,
+			Uid:       v.Uid,
+			Permitted: v.Permitted,
+			Time:      v.Time,
+			UserName:  v.UserName.String,
+		}
+		logs = append(logs, log)
+	}
+
+	tmpl := template.Must(template.ParseFiles("./view/index.html"))
+	if err := tmpl.Execute(w, logs); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Printf("failed to create and send html: %v\n", err)
+	}
 }
-
-*/

@@ -7,6 +7,8 @@ package database
 
 import (
 	"context"
+	"database/sql"
+	"time"
 )
 
 const authorizedCard = `-- name: AuthorizedCard :one
@@ -19,4 +21,69 @@ func (q *Queries) AuthorizedCard(ctx context.Context, uid string) (string, error
 	var user_name string
 	err := row.Scan(&user_name)
 	return user_name, err
+}
+
+const insertLog = `-- name: InsertLog :exec
+INSERT INTO log (
+uid,
+permitted,
+time
+) values (
+?, ?, ?
+)
+`
+
+type InsertLogParams struct {
+	Uid       string
+	Permitted bool
+	Time      time.Time
+}
+
+func (q *Queries) InsertLog(ctx context.Context, arg InsertLogParams) error {
+	_, err := q.db.ExecContext(ctx, insertLog, arg.Uid, arg.Permitted, arg.Time)
+	return err
+}
+
+const selectLogs = `-- name: SelectLogs :many
+Select id, log.uid, permitted, time, card.uid, user_name from log
+LEFT JOIN card on card.uid = log.uid
+`
+
+type SelectLogsRow struct {
+	ID        int32
+	Uid       string
+	Permitted bool
+	Time      time.Time
+	Uid_2     sql.NullString
+	UserName  sql.NullString
+}
+
+func (q *Queries) SelectLogs(ctx context.Context) ([]SelectLogsRow, error) {
+	rows, err := q.db.QueryContext(ctx, selectLogs)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []SelectLogsRow
+	for rows.Next() {
+		var i SelectLogsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Uid,
+			&i.Permitted,
+			&i.Time,
+			&i.Uid_2,
+			&i.UserName,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }

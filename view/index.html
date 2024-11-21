@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title></title>
+    <link href="css/style.css" rel="stylesheet" />
+  </head>
+
+  <body>
+    <table>
+      <tr>
+        <th>ID</th>
+        <th>Uid</th>
+        <th>Permitted</th>
+        <th>Time</th>
+        <th>UserName</th>
+      </tr>
+      {{range .}}
+      <tr>
+        <td>{{ .ID }}</td>
+        <td>{{ .Uid }}</td>
+        <td>{{ .Permitted }}</td>
+        <td>{{ .Time }}</td>
+        <td>{{ .UserName }}</td>
+      </tr>
+      {{end}}
+    </table>
+  </body>
+</html>
