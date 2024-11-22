@@ -121,10 +121,6 @@ func checkUser(w http.ResponseWriter, r *http.Request) {
 	name, err := queries.AuthorizedCard(ctx, cardUIDstr)
 	if err == sql.ErrNoRows {
 		fmt.Printf("Access denied for card: %s\n", cardUIDstr)
-		w.WriteHeader(http.StatusUnauthorized)
-		return
-	}
-	if errResponse(w, http.StatusBadRequest, err) {
 		log := database.InsertLogParams{
 			Uid:       cardUIDstr,
 			Permitted: false,
@@ -132,6 +128,9 @@ func checkUser(w http.ResponseWriter, r *http.Request) {
 		}
 		_ = queries.InsertLog(ctx, log)
 		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+	if errResponse(w, http.StatusBadRequest, err) {
 		return
 	}
 
