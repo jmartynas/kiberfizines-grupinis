@@ -128,7 +128,7 @@ func checkUser(w http.ResponseWriter, r *http.Request) {
 		log := database.InsertLogParams{
 			Uid:       cardUIDstr,
 			Permitted: false,
-			Time:      time.Now().Truncate(time.Second).UTC(),
+			Time:      time.Now().Truncate(time.Second),
 		}
 		_ = queries.InsertLog(ctx, log)
 		w.WriteHeader(http.StatusUnauthorized)
@@ -143,7 +143,7 @@ func checkUser(w http.ResponseWriter, r *http.Request) {
 		log := database.InsertLogParams{
 			Uid:       cardUIDstr,
 			Permitted: false,
-			Time:      time.Now().Truncate(time.Second).UTC(),
+			Time:      time.Now().Truncate(time.Second),
 		}
 		_ = queries.InsertLog(ctx, log)
 		w.WriteHeader(http.StatusUnauthorized)
@@ -153,7 +153,7 @@ func checkUser(w http.ResponseWriter, r *http.Request) {
 	log := database.InsertLogParams{
 		Uid:       cardUIDstr,
 		Permitted: true,
-		Time:      time.Now().Truncate(time.Second).UTC(),
+		Time:      time.Now().Truncate(time.Second),
 	}
 	if err := queries.InsertLog(ctx, log); err != nil {
 		w.WriteHeader(http.StatusUnauthorized)
