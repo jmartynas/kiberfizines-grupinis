@@ -41,9 +41,13 @@ var key = []byte{
 
 // https://dev.to/elioenaiferrari/asymmetric-cryptography-with-golang-2ffd
 func main() {
-	fmt.Println("Server started on :8080")
+	fs := http.FileServer(http.Dir("static"))
+	http.Handle("/static/", http.StripPrefix("/static/", fs))
+
 	http.HandleFunc("/", checkUser)
 	http.HandleFunc("/logs", logs)
+
+	fmt.Println("Server started on :8080")
 	if err := http.ListenAndServe(":8080", nil); err != http.ErrServerClosed {
 		fmt.Println("Server error:", err)
 	}
@@ -221,7 +225,7 @@ func logs(w http.ResponseWriter, r *http.Request) {
 		logs = append(logs, log)
 	}
 
-	tmpl := template.Must(template.ParseFiles("./view/index.html"))
+	tmpl := template.Must(template.ParseFiles("./templates/index.html"))
 	if err := tmpl.Execute(w, logs); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		fmt.Printf("failed to create and send html: %v\n", err)
